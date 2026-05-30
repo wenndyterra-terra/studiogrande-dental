@@ -1057,29 +1057,19 @@ function downloadFrame(btn){
   var style=btn.closest('.dcard').querySelector('.dcard-style');
   var nm=(style?style.textContent:'diseño').replace(/\s+/g,'-').toLowerCase();
   var RW=parseInt(frame.dataset.rw)||1080;
-  var RH=parseInt(frame.dataset.rh)||1080;
-  var plat=frame.dataset.plat||'instagram';
   var TW=inner.offsetWidth||frame.offsetWidth;
-  var TH=inner.offsetHeight||frame.offsetHeight;
-  var scale=Math.max(RW/TW, RH/TH);
+  var scale=RW/TW;
   btn.textContent='...';
   btn.disabled=true;
   html2canvas(inner,{
     scale:scale,
     useCORS:true,
     allowTaint:true,
-    backgroundColor:null,
-    width:TW,
-    height:TH,
-    windowWidth:TW,
-    windowHeight:TH
+    backgroundColor:null
   }).then(function(canvas){
-    var out=document.createElement('canvas');
-    out.width=RW; out.height=RH;
-    out.getContext('2d').drawImage(canvas,0,0,RW,RH);
     var a=document.createElement('a');
-    a.download='dental-rio-grande-'+plat+'-'+nm+'.png';
-    a.href=out.toDataURL('image/png');
+    a.download='dental-rio-grande-'+(frame.dataset.plat||'post')+'-'+nm+'.png';
+    a.href=canvas.toDataURL('image/png');
     a.click();
     btn.textContent='⬇';
     btn.disabled=false;
@@ -1095,28 +1085,19 @@ function downloadStudio(){
   var nm=(fi.n||fmt).replace(/[^a-z0-9]+/gi,'-').toLowerCase();
   var dims=(fi.d||'1080 × 1080 px').replace('/slide','').match(/\d+/g)||[1080,1080];
   var RW=parseInt(dims[0]);
-  var RH=parseInt(dims[1]);
-  var TW=tpl.offsetWidth||parseInt(tpl.style.width)||324;
-  var TH=tpl.offsetHeight||parseInt(tpl.style.height)||405;
-  var scale=Math.max(RW/TW, RH/TH);
+  var TW=tpl.offsetWidth||324;
+  var scale=RW/TW;
   btn.textContent='...';
   btn.disabled=true;
   html2canvas(tpl,{
     scale:scale,
     useCORS:true,
     allowTaint:true,
-    backgroundColor:null,
-    width:TW,
-    height:TH,
-    windowWidth:TW,
-    windowHeight:TH
+    backgroundColor:null
   }).then(function(canvas){
-    var out=document.createElement('canvas');
-    out.width=RW; out.height=RH;
-    out.getContext('2d').drawImage(canvas,0,0,RW,RH);
     var a=document.createElement('a');
     a.download='dental-rio-grande-'+nm+'.png';
-    a.href=out.toDataURL('image/png');
+    a.href=canvas.toDataURL('image/png');
     a.click();
     btn.textContent='⬇ PNG';
     btn.disabled=false;
