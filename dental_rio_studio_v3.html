@@ -13,7 +13,8 @@
   --text:#1a1a1a;--muted:#666;--faint:#bbb;--border:#e8e8e8;
 }
 html,body{height:100%;font-family:'Montserrat',sans-serif;background:#e8e6e4;color:var(--text);overflow:hidden;}
-.app{display:grid;grid-template-columns:210px 1fr 280px;height:100vh;}
+.app{display:grid;grid-template-columns:210px minmax(320px,1fr) 280px;height:100vh;min-width:810px;}
+@media(max-width:900px){.app{grid-template-columns:180px minmax(280px,1fr) 250px;}}
 
 /* ── SIDEBAR ── */
 .sb{background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
@@ -301,6 +302,10 @@ function LP(){return _LP;}
 
 <!-- ═══ RIGHT PANEL (IA — siempre visible) ═══ -->
 <div class="rp">
+  <div id="apikey-bar" style="padding:7px 12px;background:#fff8e1;border-bottom:1px solid #ffe082;display:flex;align-items:center;gap:6px;flex-shrink:0;">
+    <input id="apikey-inp" type="password" placeholder="Pega tu Anthropic API key (sk-ant-…)" style="flex:1;font-size:10px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Montserrat',sans-serif;min-width:0;">
+    <button onclick="saveKey()" style="font-size:10px;padding:5px 10px;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;font-family:'Montserrat',sans-serif;">Guardar</button>
+  </div>
   <div class="rp-head">
     <p class="rp-ht">Claude · Director creativo IA</p>
     <p class="rp-hs" id="rp-hs">Describe el post y genero el diseño</p>
@@ -345,6 +350,21 @@ function LP(){return _LP;}
 
 <script>
 var _logo = window._LOGO;
+
+// ── API KEY ──
+function saveKey(){
+  var v=document.getElementById('apikey-inp').value.trim();
+  if(!v){return;}
+  localStorage.setItem('anthropic_key',v);
+  document.getElementById('apikey-bar').style.display='none';
+  document.getElementById('apikey-inp').value='';
+  addMsg('ai','✅ API key guardada. Ya puedes generar diseños.');
+}
+(function(){
+  if(localStorage.getItem('anthropic_key')){
+    document.getElementById('apikey-bar').style.display='none';
+  }
+})();
 
 var IMGS  = [{src:_doc, name:'Dr. Sergio'}];
 var appMode = 'studio';
@@ -956,10 +976,18 @@ async function sendAI(){
 
   var SYSTEM='Eres el director creativo de Dental Río Grande, Ciudad Juárez. Dr. Sergio Gustavo González, Cirujano Dentista, Implantología y Cirugía Bucal. Paleta: navy #091C3E, azul #155493. Tono: premium, elegante, confianza, sin clichés.\n\nFormato activo: '+FI[fmt].n+' ('+FI[fmt].d+')\nImágenes disponibles: '+IMGS.length+'\n\nResponde SOLO en JSON puro sin markdown:\n{"title":"con <em> y <br>","badge":"","desc":"","body":"","cta":"CTA →","fact":"","p1t":"","p1b":"","p2t":"","p2b":"","p3t":"","p3b":"","price":"","ep":"","sub":"","quote":"","tag":"","badge":"","slides":["Título — detalle"],"copy_fb":"copy Facebook","copy_ig":"copy Instagram","copy_li":"copy LinkedIn"}';
 
+  var akey=localStorage.getItem('anthropic_key')||'';
+  if(!akey){hideOv();bbl.classList.remove('think');bbl.textContent='Agrega tu API key de Anthropic en el panel de arriba para activar la IA.';document.getElementById('sb2').disabled=false;return;}
   try{
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:SYSTEM,messages:[{role:'user',content:txt}]})
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':akey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({model:'claude-sonnet-4-5-20251101',max_tokens:1200,system:SYSTEM,messages:[{role:'user',content:txt}]})
     });
     var data=await resp.json();
     var raw=data.content&&data.content[0]?data.content[0].text:'';
