@@ -303,6 +303,10 @@ function LP(){return _LP;}
     <input id="apikey-inp" type="password" placeholder="Pega tu Anthropic API key (sk-ant-…)" style="flex:1;font-size:10px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Montserrat',sans-serif;min-width:0;">
     <button onclick="saveKey()" style="font-size:10px;padding:5px 10px;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;font-family:'Montserrat',sans-serif;">Guardar</button>
   </div>
+  <div id="apikey-saved-bar" style="display:none;padding:5px 12px;background:#e8f5e9;border-bottom:1px solid #c8e6c9;display:none;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <span style="font-size:10px;color:#2e7d32;">✅ API key activa</span>
+    <button onclick="resetKey()" style="font-size:9px;padding:3px 8px;background:transparent;border:1px solid #aaa;border-radius:3px;cursor:pointer;color:#666;font-family:'Montserrat',sans-serif;">Cambiar key</button>
+  </div>
   <div class="rp-head">
     <p class="rp-ht">Claude · Director creativo IA</p>
     <p class="rp-hs" id="rp-hs">Describe el post y genero el diseño</p>
@@ -351,15 +355,26 @@ var _logo = window._LOGO;
 // ── API KEY ──
 function saveKey(){
   var v=document.getElementById('apikey-inp').value.trim();
-  if(!v){return;}
+  if(!v||!v.startsWith('sk-')){
+    document.getElementById('apikey-inp').style.borderColor='red';
+    setTimeout(function(){document.getElementById('apikey-inp').style.borderColor='';},2000);
+    return;
+  }
   localStorage.setItem('anthropic_key',v);
   document.getElementById('apikey-bar').style.display='none';
+  document.getElementById('apikey-saved-bar').style.display='flex';
   document.getElementById('apikey-inp').value='';
-  addMsg('ai','✅ API key guardada. Ya puedes generar diseños.');
+  addMsg('ai','✅ API key guardada. Ya puedes generar diseños con IA.');
+}
+function resetKey(){
+  localStorage.removeItem('anthropic_key');
+  document.getElementById('apikey-saved-bar').style.display='none';
+  document.getElementById('apikey-bar').style.display='flex';
 }
 (function(){
   if(localStorage.getItem('anthropic_key')){
     document.getElementById('apikey-bar').style.display='none';
+    document.getElementById('apikey-saved-bar').style.display='flex';
   }
 })();
 
@@ -984,9 +999,19 @@ async function sendAI(){
         'anthropic-version':'2023-06-01',
         'anthropic-dangerous-direct-browser-access':'true'
       },
-      body:JSON.stringify({model:'claude-sonnet-4-5-20251101',max_tokens:1200,system:SYSTEM,messages:[{role:'user',content:txt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1200,system:SYSTEM,messages:[{role:'user',content:txt}]})
     });
     var data=await resp.json();
+    if(!resp.ok){
+      hideOv();
+      bbl.classList.remove('think');
+      var errMsg=data.error&&data.error.message?data.error.message:'Error '+resp.status;
+      if(resp.status===401){errMsg='API key inválida. Haz clic en "⚙ Key" y verifica tu clave.';}
+      else if(resp.status===429){errMsg='Límite de peticiones alcanzado. Espera un momento e intenta de nuevo.';}
+      bbl.textContent='❌ '+errMsg;
+      document.getElementById('sb2').disabled=false;
+      return;
+    }
     var raw=data.content&&data.content[0]?data.content[0].text:'';
     raw=raw.replace(/```json|```/g,'').trim();
     var parsed=JSON.parse(raw);
@@ -1000,7 +1025,7 @@ async function sendAI(){
   }catch(err){
     hideOv();
     bbl.classList.remove('think');
-    bbl.textContent='Error de conexión. Verifica internet e intenta de nuevo.';
+    bbl.textContent='❌ Sin conexión a internet o bloqueado por el navegador. Intenta de nuevo.';
     console.error(err);
   }
   document.getElementById('sb2').disabled=false;
