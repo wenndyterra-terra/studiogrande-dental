@@ -752,14 +752,17 @@ function makeRandCard(plat,ct){
   var frame=document.createElement('div');
   frame.className='dcard-frame';
 
-  var W,H;
-  if(plat==='instagram'){W=260;H=325;}
-  else if(plat==='story'){W=200;H=356;}
-  else if(plat==='video'){W=340;H=191;}
-  else{W=340;H=178;}
+  var W,H,RW,RH;
+  if(plat==='instagram'){W=260;H=325;RW=1080;RH=1350;}
+  else if(plat==='story'){W=200;H=356;RW=1080;RH=1920;}
+  else if(plat==='video'){W=340;H=191;RW=1920;RH=1080;}
+  else{W=340;H=178;RW=1200;RH=630;}
 
   frame.style.width=W+'px';
   frame.style.height=H+'px';
+  frame.dataset.rw=RW;
+  frame.dataset.rh=RH;
+  frame.dataset.plat=plat;
   frame.innerHTML=renderRandLayout(layout,pal,data,ct,W,H,img);
   frame.onclick=function(){selectRandCard(frame,copy);};
 
@@ -1052,34 +1055,69 @@ function downloadFrame(btn){
   var frame=btn.closest('.dcard').querySelector('.dcard-frame');
   var style=btn.closest('.dcard').querySelector('.dcard-style');
   var nm=(style?style.textContent:'diseño').replace(/\s+/g,'-').toLowerCase();
+  var RW=parseInt(frame.dataset.rw)||1080;
+  var RH=parseInt(frame.dataset.rh)||1080;
+  var plat=frame.dataset.plat||'instagram';
+  var scaleX=RW/frame.offsetWidth;
+  var scaleY=RH/frame.offsetHeight;
+  var scale=Math.max(scaleX,scaleY);
   btn.textContent='...';
   btn.disabled=true;
-  html2canvas(frame,{scale:2,useCORS:true,allowTaint:true,backgroundColor:null}).then(function(canvas){
+  html2canvas(frame,{
+    scale:scale,
+    useCORS:true,
+    allowTaint:true,
+    backgroundColor:null,
+    width:frame.offsetWidth,
+    height:frame.offsetHeight,
+    windowWidth:frame.offsetWidth,
+    windowHeight:frame.offsetHeight
+  }).then(function(canvas){
+    var out=document.createElement('canvas');
+    out.width=RW; out.height=RH;
+    var ctx=out.getContext('2d');
+    ctx.drawImage(canvas,0,0,RW,RH);
     var a=document.createElement('a');
-    a.download='dental-rio-grande-'+nm+'.png';
-    a.href=canvas.toDataURL('image/png');
+    a.download='dental-rio-grande-'+plat+'-'+nm+'.png';
+    a.href=out.toDataURL('image/png');
     a.click();
     btn.textContent='⬇';
     btn.disabled=false;
-  }).catch(function(){btn.textContent='⬇';btn.disabled=false;});
+  }).catch(function(e){console.error(e);btn.textContent='⬇';btn.disabled=false;});
 }
 
 function downloadStudio(){
   var root=document.getElementById('tpl-root');
   if(!root||!root.firstElementChild||root.firstElementChild.classList.contains('gov')){return;}
   var btn=document.getElementById('dl-studio-btn');
-  var fi=document.getElementById('fi-name');
-  var nm=(fi?fi.textContent:'diseno').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
+  var fi=FI[fmt]||{};
+  var nm=(fi.n||fmt).replace(/[^a-z0-9]+/gi,'-').toLowerCase();
+  var dims=(fi.d||'1080 × 1080 px').replace('/slide','').match(/\d+/g)||[1080,1080];
+  var RW=parseInt(dims[0]);
+  var RH=parseInt(dims[1]);
+  var scaleX=RW/root.offsetWidth;
+  var scaleY=RH/root.offsetHeight;
+  var scale=Math.max(scaleX,scaleY,2);
   btn.textContent='...';
   btn.disabled=true;
-  html2canvas(root,{scale:2,useCORS:true,allowTaint:true,backgroundColor:null}).then(function(canvas){
+  html2canvas(root,{
+    scale:scale,
+    useCORS:true,
+    allowTaint:true,
+    backgroundColor:null,
+    width:root.offsetWidth,
+    height:root.offsetHeight
+  }).then(function(canvas){
+    var out=document.createElement('canvas');
+    out.width=RW; out.height=RH;
+    out.getContext('2d').drawImage(canvas,0,0,RW,RH);
     var a=document.createElement('a');
     a.download='dental-rio-grande-'+nm+'.png';
-    a.href=canvas.toDataURL('image/png');
+    a.href=out.toDataURL('image/png');
     a.click();
     btn.textContent='⬇ PNG';
     btn.disabled=false;
-  }).catch(function(){btn.textContent='⬇ PNG';btn.disabled=false;});
+  }).catch(function(e){console.error(e);btn.textContent='⬇ PNG';btn.disabled=false;});
 }
 </script>
 </body>
