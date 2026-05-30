@@ -310,6 +310,17 @@ function LP(){return _LP;}
       <input id="apikey-inp" type="password" placeholder="Pega tu API key…" style="flex:1;font-size:10px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Montserrat',sans-serif;min-width:0;">
       <button onclick="saveKey()" style="font-size:10px;padding:5px 10px;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;font-family:'Montserrat',sans-serif;">Guardar</button>
     </div>
+    <div id="or-model-row" style="display:none;gap:4px;align-items:center;">
+      <span style="font-size:9px;color:#888;white-space:nowrap;">Modelo:</span>
+      <select id="or-model" style="flex:1;font-size:9px;padding:3px 5px;border:1px solid #ddd;border-radius:4px;font-family:'Montserrat',sans-serif;background:#fff;color:var(--navy);">
+        <option value="deepseek/deepseek-r1:free">DeepSeek R1 (recomendado)</option>
+        <option value="deepseek/deepseek-chat:free">DeepSeek Chat</option>
+        <option value="google/gemma-3-27b-it:free">Google Gemma 3 27B</option>
+        <option value="mistralai/mistral-7b-instruct:free">Mistral 7B</option>
+        <option value="qwen/qwen-2.5-7b-instruct:free">Qwen 2.5 7B</option>
+        <option value="microsoft/phi-3-mini-128k-instruct:free">Phi-3 Mini</option>
+      </select>
+    </div>
     <p id="apikey-hint" style="font-size:9px;color:#888;margin:0;"></p>
   </div>
   <div id="apikey-saved-bar" style="display:none;padding:5px 12px;background:#e8f5e9;border-bottom:1px solid #c8e6c9;align-items:center;justify-content:space-between;flex-shrink:0;">
@@ -387,8 +398,8 @@ var AI_PROVIDERS = {
   openrouter: {
     name: 'IA',
     label: 'OpenRouter (GRATIS)',
-    hint: '🆓 Gratis — crea cuenta en openrouter.ai → Keys → Create Key',
-    model: 'meta-llama/llama-3.1-8b-instruct:free',
+    hint: '🆓 Gratis — openrouter.ai → Keys → Create Key',
+    model: 'deepseek/deepseek-r1:free',
     storageKey: 'ai_key_openrouter'
   }
 };
@@ -398,6 +409,7 @@ function currentProvider(){
 }
 
 function onProviderChange(){
+  document.getElementById('or-model-row').style.display=currentProvider()==='openrouter'?'flex':'none';
   var p=AI_PROVIDERS[currentProvider()];
   document.getElementById('apikey-hint').textContent=p.hint;
   document.getElementById('apikey-inp').placeholder='API key para '+p.label+'…';
@@ -480,10 +492,11 @@ async function callAI(system, userMsg){
   }
 
   if(provider==='openrouter'){
+    var orModel=document.getElementById('or-model').value||p.model;
     var resp=await fetch('https://openrouter.ai/api/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+key,'HTTP-Referer':'https://dental-rio-grande.app','X-Title':'Dental Río Grande Studio'},
-      body:JSON.stringify({model:p.model,max_tokens:1200,messages:[{role:'system',content:system},{role:'user',content:userMsg}]})
+      body:JSON.stringify({model:orModel,max_tokens:1200,messages:[{role:'system',content:system},{role:'user',content:userMsg}]})
     });
     var data=await resp.json();
     if(!resp.ok) throw new Error(data.error&&data.error.message?data.error.message:'Error '+resp.status);
