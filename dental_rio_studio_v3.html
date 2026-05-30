@@ -302,6 +302,7 @@ function LP(){return _LP;}
   <div id="apikey-bar" style="padding:7px 12px;background:#fff8e1;border-bottom:1px solid #ffe082;display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
     <div style="display:flex;gap:4px;">
       <select id="ai-provider" onchange="onProviderChange()" style="font-size:10px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-family:'Montserrat',sans-serif;background:#fff;color:var(--navy);flex-shrink:0;">
+        <option value="openrouter">⭐ OpenRouter (GRATIS)</option>
         <option value="anthropic">Claude (Anthropic)</option>
         <option value="openai">GPT-4o (OpenAI)</option>
         <option value="gemini">Gemini (Google)</option>
@@ -382,6 +383,13 @@ var AI_PROVIDERS = {
     hint: 'Obtén tu key en aistudio.google.com',
     model: 'gemini-2.0-flash',
     storageKey: 'ai_key_gemini'
+  },
+  openrouter: {
+    name: 'IA',
+    label: 'OpenRouter (GRATIS)',
+    hint: '🆓 Gratis — crea cuenta en openrouter.ai → Keys → Create Key',
+    model: 'meta-llama/llama-4-maverick:free',
+    storageKey: 'ai_key_openrouter'
   }
 };
 
@@ -469,6 +477,17 @@ async function callAI(system, userMsg){
     var data=await resp.json();
     if(!resp.ok) throw new Error(data.error&&data.error.message?data.error.message:'Error '+resp.status);
     return data.candidates&&data.candidates[0]?data.candidates[0].content.parts[0].text:'';
+  }
+
+  if(provider==='openrouter'){
+    var resp=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key,'HTTP-Referer':'https://dental-rio-grande.app','X-Title':'Dental Río Grande Studio'},
+      body:JSON.stringify({model:p.model,max_tokens:1200,messages:[{role:'system',content:system},{role:'user',content:userMsg}]})
+    });
+    var data=await resp.json();
+    if(!resp.ok) throw new Error(data.error&&data.error.message?data.error.message:'Error '+resp.status);
+    return data.choices&&data.choices[0]?data.choices[0].message.content:'';
   }
 
   throw new Error('Proveedor desconocido');
