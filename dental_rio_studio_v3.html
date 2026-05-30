@@ -299,16 +299,24 @@ function LP(){return _LP;}
 
 <!-- ═══ RIGHT PANEL (IA — siempre visible) ═══ -->
 <div class="rp">
-  <div id="apikey-bar" style="padding:7px 12px;background:#fff8e1;border-bottom:1px solid #ffe082;display:flex;align-items:center;gap:6px;flex-shrink:0;">
-    <input id="apikey-inp" type="password" placeholder="Pega tu Anthropic API key (sk-ant-…)" style="flex:1;font-size:10px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Montserrat',sans-serif;min-width:0;">
-    <button onclick="saveKey()" style="font-size:10px;padding:5px 10px;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;font-family:'Montserrat',sans-serif;">Guardar</button>
+  <div id="apikey-bar" style="padding:7px 12px;background:#fff8e1;border-bottom:1px solid #ffe082;display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+    <div style="display:flex;gap:4px;">
+      <select id="ai-provider" onchange="onProviderChange()" style="font-size:10px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-family:'Montserrat',sans-serif;background:#fff;color:var(--navy);flex-shrink:0;">
+        <option value="anthropic">Claude (Anthropic)</option>
+        <option value="openai">GPT-4o (OpenAI)</option>
+        <option value="gemini">Gemini (Google)</option>
+      </select>
+      <input id="apikey-inp" type="password" placeholder="Pega tu API key…" style="flex:1;font-size:10px;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Montserrat',sans-serif;min-width:0;">
+      <button onclick="saveKey()" style="font-size:10px;padding:5px 10px;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;font-family:'Montserrat',sans-serif;">Guardar</button>
+    </div>
+    <p id="apikey-hint" style="font-size:9px;color:#888;margin:0;"></p>
   </div>
-  <div id="apikey-saved-bar" style="display:none;padding:5px 12px;background:#e8f5e9;border-bottom:1px solid #c8e6c9;display:none;align-items:center;justify-content:space-between;flex-shrink:0;">
-    <span style="font-size:10px;color:#2e7d32;">✅ API key activa</span>
-    <button onclick="resetKey()" style="font-size:9px;padding:3px 8px;background:transparent;border:1px solid #aaa;border-radius:3px;cursor:pointer;color:#666;font-family:'Montserrat',sans-serif;">Cambiar key</button>
+  <div id="apikey-saved-bar" style="display:none;padding:5px 12px;background:#e8f5e9;border-bottom:1px solid #c8e6c9;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <span id="apikey-saved-label" style="font-size:10px;color:#2e7d32;">✅ API key activa</span>
+    <button onclick="resetKey()" style="font-size:9px;padding:3px 8px;background:transparent;border:1px solid #aaa;border-radius:3px;cursor:pointer;color:#666;font-family:'Montserrat',sans-serif;">Cambiar</button>
   </div>
   <div class="rp-head">
-    <p class="rp-ht">Claude · Director creativo IA</p>
+    <p class="rp-ht" id="rp-ht">IA · Director creativo</p>
     <p class="rp-hs" id="rp-hs">Describe el post y genero el diseño</p>
   </div>
 
@@ -352,30 +360,125 @@ function LP(){return _LP;}
 <script>
 var _logo = window._LOGO;
 
-// ── API KEY ──
+// ── PROVEEDORES IA ──
+var AI_PROVIDERS = {
+  anthropic: {
+    name: 'Claude',
+    label: 'Claude (Anthropic)',
+    hint: 'Obtén tu key en console.anthropic.com',
+    model: 'claude-sonnet-4-5',
+    storageKey: 'ai_key_anthropic'
+  },
+  openai: {
+    name: 'GPT-4o',
+    label: 'GPT-4o (OpenAI)',
+    hint: 'Obtén tu key en platform.openai.com',
+    model: 'gpt-4o',
+    storageKey: 'ai_key_openai'
+  },
+  gemini: {
+    name: 'Gemini',
+    label: 'Gemini (Google)',
+    hint: 'Obtén tu key en aistudio.google.com',
+    model: 'gemini-2.0-flash',
+    storageKey: 'ai_key_gemini'
+  }
+};
+
+function currentProvider(){
+  return document.getElementById('ai-provider').value || 'anthropic';
+}
+
+function onProviderChange(){
+  var p=AI_PROVIDERS[currentProvider()];
+  document.getElementById('apikey-hint').textContent=p.hint;
+  document.getElementById('apikey-inp').placeholder='API key para '+p.label+'…';
+  var key=localStorage.getItem(p.storageKey)||'';
+  if(key){
+    document.getElementById('apikey-bar').style.display='none';
+    document.getElementById('apikey-saved-bar').style.display='flex';
+    document.getElementById('apikey-saved-label').textContent='✅ '+p.label+' activo';
+    document.getElementById('rp-ht').textContent=p.name+' · Director creativo IA';
+  } else {
+    document.getElementById('apikey-saved-bar').style.display='none';
+    document.getElementById('apikey-bar').style.display='flex';
+    document.getElementById('rp-ht').textContent='IA · Director creativo';
+  }
+}
+
 function saveKey(){
   var v=document.getElementById('apikey-inp').value.trim();
-  if(!v||!v.startsWith('sk-')){
+  if(!v){
     document.getElementById('apikey-inp').style.borderColor='red';
     setTimeout(function(){document.getElementById('apikey-inp').style.borderColor='';},2000);
     return;
   }
-  localStorage.setItem('anthropic_key',v);
+  var p=AI_PROVIDERS[currentProvider()];
+  localStorage.setItem(p.storageKey,v);
+  localStorage.setItem('ai_provider',currentProvider());
   document.getElementById('apikey-bar').style.display='none';
   document.getElementById('apikey-saved-bar').style.display='flex';
+  document.getElementById('apikey-saved-label').textContent='✅ '+p.label+' activo';
   document.getElementById('apikey-inp').value='';
-  addMsg('ai','✅ API key guardada. Ya puedes generar diseños con IA.');
+  document.getElementById('rp-ht').textContent=p.name+' · Director creativo IA';
+  addMsg('ai','✅ '+p.label+' configurado. Ya puedes generar diseños.');
 }
+
 function resetKey(){
-  localStorage.removeItem('anthropic_key');
+  var p=AI_PROVIDERS[currentProvider()];
+  localStorage.removeItem(p.storageKey);
   document.getElementById('apikey-saved-bar').style.display='none';
   document.getElementById('apikey-bar').style.display='flex';
 }
-(function(){
-  if(localStorage.getItem('anthropic_key')){
-    document.getElementById('apikey-bar').style.display='none';
-    document.getElementById('apikey-saved-bar').style.display='flex';
+
+async function callAI(system, userMsg){
+  var provider=currentProvider();
+  var p=AI_PROVIDERS[provider];
+  var key=localStorage.getItem(p.storageKey)||'';
+  if(!key) throw new Error('NO_KEY');
+
+  if(provider==='anthropic'){
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:p.model,max_tokens:1200,system:system,messages:[{role:'user',content:userMsg}]})
+    });
+    var data=await resp.json();
+    if(!resp.ok) throw new Error(data.error&&data.error.message?data.error.message:'Error '+resp.status);
+    return data.content&&data.content[0]?data.content[0].text:'';
   }
+
+  if(provider==='openai'){
+    var resp=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:p.model,max_tokens:1200,messages:[{role:'system',content:system},{role:'user',content:userMsg}]})
+    });
+    var data=await resp.json();
+    if(!resp.ok) throw new Error(data.error&&data.error.message?data.error.message:'Error '+resp.status);
+    return data.choices&&data.choices[0]?data.choices[0].message.content:'';
+  }
+
+  if(provider==='gemini'){
+    var url='https://generativelanguage.googleapis.com/v1beta/models/'+p.model+':generateContent?key='+key;
+    var resp=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:system+'\n\n'+userMsg}]}],generationConfig:{maxOutputTokens:1200}})
+    });
+    var data=await resp.json();
+    if(!resp.ok) throw new Error(data.error&&data.error.message?data.error.message:'Error '+resp.status);
+    return data.candidates&&data.candidates[0]?data.candidates[0].content.parts[0].text:'';
+  }
+
+  throw new Error('Proveedor desconocido');
+}
+
+(function(){
+  var savedProvider=localStorage.getItem('ai_provider')||'anthropic';
+  var sel=document.getElementById('ai-provider');
+  sel.value=savedProvider;
+  onProviderChange();
 })();
 
 var IMGS  = [{src:_doc, name:'Dr. Sergio'}];
@@ -959,7 +1062,8 @@ function addMsg(role,text,thinking){
   var wrap=document.getElementById('chat-wrap');
   var div=document.createElement('div');
   div.className='msg '+(role==='user'?'mu':'ma');
-  div.innerHTML='<span class="ml">'+(role==='user'?'Tú':'Claude')+'</span>'+
+  var aiName=AI_PROVIDERS[currentProvider()]?AI_PROVIDERS[currentProvider()].name:'IA';
+  div.innerHTML='<span class="ml">'+(role==='user'?'Tú':aiName)+'</span>'+
     '<div class="bbl'+(thinking?' think':'')+'">'+(text||'...')+'</div>';
   wrap.appendChild(div);
   wrap.scrollTop=wrap.scrollHeight;
@@ -991,31 +1095,14 @@ async function sendAI(){
 
   var SYSTEM='Eres el director creativo de Dental Río Grande, Ciudad Juárez. Dr. Sergio Gustavo González, Cirujano Dentista, Implantología y Cirugía Bucal. Paleta: navy #091C3E, azul #155493. Tono: premium, elegante, confianza, sin clichés.\n\nFormato activo: '+FI[fmt].n+' ('+FI[fmt].d+')\nImágenes disponibles: '+IMGS.length+'\n\nResponde SOLO en JSON puro sin markdown:\n{"title":"con <em> y <br>","badge":"","desc":"","body":"","cta":"CTA →","fact":"","p1t":"","p1b":"","p2t":"","p2b":"","p3t":"","p3b":"","price":"","ep":"","sub":"","quote":"","tag":"","badge":"","slides":["Título — detalle"],"copy_fb":"copy Facebook","copy_ig":"copy Instagram","copy_li":"copy LinkedIn"}';
 
-  var akey=localStorage.getItem('anthropic_key')||'';
-  if(!akey){hideOv();bbl.classList.remove('think');bbl.textContent='Agrega tu API key de Anthropic en el panel de arriba para activar la IA.';document.getElementById('sb2').disabled=false;return;}
+  var p=AI_PROVIDERS[currentProvider()];
+  if(!localStorage.getItem(p.storageKey)){
+    hideOv();bbl.classList.remove('think');
+    bbl.textContent='Agrega tu API key de '+p.label+' en el panel de arriba.';
+    document.getElementById('sb2').disabled=false;return;
+  }
   try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':akey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1200,system:SYSTEM,messages:[{role:'user',content:txt}]})
-    });
-    var data=await resp.json();
-    if(!resp.ok){
-      hideOv();
-      bbl.classList.remove('think');
-      var errMsg=data.error&&data.error.message?data.error.message:'Error '+resp.status;
-      if(resp.status===401){errMsg='API key inválida. Haz clic en "⚙ Key" y verifica tu clave.';}
-      else if(resp.status===429){errMsg='Límite de peticiones alcanzado. Espera un momento e intenta de nuevo.';}
-      bbl.textContent='❌ '+errMsg;
-      document.getElementById('sb2').disabled=false;
-      return;
-    }
-    var raw=data.content&&data.content[0]?data.content[0].text:'';
+    var raw=await callAI(SYSTEM,txt);
     raw=raw.replace(/```json|```/g,'').trim();
     var parsed=JSON.parse(raw);
     CD=parsed;
@@ -1028,7 +1115,10 @@ async function sendAI(){
   }catch(err){
     hideOv();
     bbl.classList.remove('think');
-    bbl.textContent='❌ Sin conexión a internet o bloqueado por el navegador. Intenta de nuevo.';
+    if(err.message==='NO_KEY') bbl.textContent='Agrega tu API key en el panel de arriba.';
+    else if(err.message.includes('401')||err.message.includes('invalid')) bbl.textContent='❌ API key inválida. Verifica tu clave.';
+    else if(err.message.includes('429')) bbl.textContent='❌ Límite de peticiones alcanzado. Intenta en un momento.';
+    else bbl.textContent='❌ '+err.message;
     console.error(err);
   }
   document.getElementById('sb2').disabled=false;
