@@ -1053,30 +1053,30 @@ function doCopy(){
 
 function downloadFrame(btn){
   var frame=btn.closest('.dcard').querySelector('.dcard-frame');
+  var inner=frame.firstElementChild||frame;
   var style=btn.closest('.dcard').querySelector('.dcard-style');
   var nm=(style?style.textContent:'diseño').replace(/\s+/g,'-').toLowerCase();
   var RW=parseInt(frame.dataset.rw)||1080;
   var RH=parseInt(frame.dataset.rh)||1080;
   var plat=frame.dataset.plat||'instagram';
-  var scaleX=RW/frame.offsetWidth;
-  var scaleY=RH/frame.offsetHeight;
-  var scale=Math.max(scaleX,scaleY);
+  var TW=inner.offsetWidth||frame.offsetWidth;
+  var TH=inner.offsetHeight||frame.offsetHeight;
+  var scale=Math.max(RW/TW, RH/TH);
   btn.textContent='...';
   btn.disabled=true;
-  html2canvas(frame,{
+  html2canvas(inner,{
     scale:scale,
     useCORS:true,
     allowTaint:true,
     backgroundColor:null,
-    width:frame.offsetWidth,
-    height:frame.offsetHeight,
-    windowWidth:frame.offsetWidth,
-    windowHeight:frame.offsetHeight
+    width:TW,
+    height:TH,
+    windowWidth:TW,
+    windowHeight:TH
   }).then(function(canvas){
     var out=document.createElement('canvas');
     out.width=RW; out.height=RH;
-    var ctx=out.getContext('2d');
-    ctx.drawImage(canvas,0,0,RW,RH);
+    out.getContext('2d').drawImage(canvas,0,0,RW,RH);
     var a=document.createElement('a');
     a.download='dental-rio-grande-'+plat+'-'+nm+'.png';
     a.href=out.toDataURL('image/png');
@@ -1088,25 +1088,28 @@ function downloadFrame(btn){
 
 function downloadStudio(){
   var root=document.getElementById('tpl-root');
-  if(!root||!root.firstElementChild||root.firstElementChild.classList.contains('gov')){return;}
+  var tpl=root&&root.querySelector('.tpl');
+  if(!tpl){alert('Genera un diseño primero.');return;}
   var btn=document.getElementById('dl-studio-btn');
   var fi=FI[fmt]||{};
   var nm=(fi.n||fmt).replace(/[^a-z0-9]+/gi,'-').toLowerCase();
   var dims=(fi.d||'1080 × 1080 px').replace('/slide','').match(/\d+/g)||[1080,1080];
   var RW=parseInt(dims[0]);
   var RH=parseInt(dims[1]);
-  var scaleX=RW/root.offsetWidth;
-  var scaleY=RH/root.offsetHeight;
-  var scale=Math.max(scaleX,scaleY,2);
+  var TW=tpl.offsetWidth||parseInt(tpl.style.width)||324;
+  var TH=tpl.offsetHeight||parseInt(tpl.style.height)||405;
+  var scale=Math.max(RW/TW, RH/TH);
   btn.textContent='...';
   btn.disabled=true;
-  html2canvas(root,{
+  html2canvas(tpl,{
     scale:scale,
     useCORS:true,
     allowTaint:true,
     backgroundColor:null,
-    width:root.offsetWidth,
-    height:root.offsetHeight
+    width:TW,
+    height:TH,
+    windowWidth:TW,
+    windowHeight:TH
   }).then(function(canvas){
     var out=document.createElement('canvas');
     out.width=RW; out.height=RH;
