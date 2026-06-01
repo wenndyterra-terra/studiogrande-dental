@@ -520,7 +520,6 @@ var zl  = 0.8;
 var nsl = 5;
 var plat = 'facebook';
 var CD  = {};
-var selectedCopyData = null;
 var totalGen = 0;
 
 document.getElementById('sb-logo').src = _LT;
@@ -1039,6 +1038,35 @@ function renderRandLayout(layout,pal,data,ct,W,H,img){
       '</div>'+
       '</div>'
     );
+    case 'fb-minimal': return(
+      '<div style="background:#fff;width:'+W+'px;height:'+H+'px;position:relative;overflow:hidden;border:1px solid #eee;">'+
+      '<div style="position:absolute;top:0;left:0;width:100%;height:3px;background:'+ac+';"></div>'+
+      '<div style="position:absolute;inset:10px;display:flex;flex-direction:column;justify-content:center;gap:5px;">'+
+        '<p style="font-size:6px;letter-spacing:.28em;color:'+(dk?'rgba(255,255,255,.3)':'#bbb')+';">DENTAL RÍO GRANDE</p>'+
+        '<h2 style="font-family:Cormorant Garamond,serif;font-size:18px;font-weight:300;color:'+tc+';line-height:1.1;">'+data.title.replace(/\n/g,'<br>')+'</h2>'+
+        '<div style="width:18px;height:.5px;background:'+ac+';"></div>'+
+        '<p style="font-size:7px;font-weight:300;color:'+mu+';line-height:1.6;">'+(data.desc||data.body||data.quote||'')+'</p>'+
+        '<span style="font-size:6px;letter-spacing:.18em;color:'+ac+';border-bottom:.5px solid '+ac+';padding-bottom:1px;width:fit-content;">'+data.cta+'</span>'+
+      '</div>'+
+      '<div style="position:absolute;bottom:8px;right:10px;"><img src="'+logoSrc+'" style="height:9px;'+li+'"></div>'+
+      '</div>'
+    );
+    case 'vid-dramatic': return(
+      '<div style="background:#000;width:'+W+'px;height:'+H+'px;position:relative;overflow:hidden;">'+
+      (img?'<img src="'+img+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.5;">':'')+
+      '<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.9) 30%,rgba(0,0,0,.1));pointer-events:none;"></div>'+
+      '<img src="'+logoSrc+'" style="position:absolute;top:10px;left:10px;height:12px;opacity:.8;">'+
+      '<div style="position:absolute;bottom:0;left:0;width:100%;padding:12px;">'+
+        '<div style="width:24px;height:2px;background:'+ac+';margin-bottom:7px;"></div>'+
+        '<h2 style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:#fff;line-height:1.05;margin-bottom:6px;">'+data.title.replace(/\n/g,'<br>')+'</h2>'+
+        '<p style="font-size:7px;font-weight:300;color:rgba(255,255,255,.5);line-height:1.55;margin-bottom:10px;">'+(data.body||data.desc||'')+'</p>'+
+        '<div style="display:inline-flex;align-items:center;gap:6px;background:'+ac+';padding:5px 10px;">'+
+          '<div style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid #fff;"></div>'+
+          '<span style="font-size:6px;letter-spacing:.2em;color:#fff;">'+data.cta+'</span>'+
+        '</div>'+
+      '</div>'+
+      '</div>'
+    );
     default: return(
       '<div style="'+bg+';width:'+W+'px;height:'+H+'px;position:relative;overflow:hidden;">'+
       (img?'<img src="'+img+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;">':'')+
@@ -1114,11 +1142,10 @@ async function sendAI(){
   addMsg('user',txt);
   var bbl=addMsg('ai',null,true);
 
-  // If random mode, just regenerate + give copy advice via AI
   if(appMode==='random'){
     generateRandom();
     bbl.classList.remove('think');
-    bbl.innerHTML='Generé nuevas variaciones con el estilo de la marca. Haz clic en cualquier diseño para ver su copy.';
+    bbl.innerHTML='Generé nuevas variaciones. Haz clic en cualquier diseño para ver su copy.<br><small style="color:var(--muted);">Cambia a modo Studio para generar diseños con IA.</small>';
     document.getElementById('sb2').disabled=false;
     return;
   }
@@ -1136,7 +1163,9 @@ async function sendAI(){
   try{
     var raw=await callAI(SYSTEM,txt);
     raw=raw.replace(/```json|```/g,'').trim();
-    var parsed=JSON.parse(raw);
+    var jsonMatch=raw.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('La IA no devolvió JSON válido. Intenta de nuevo.');
+    var parsed=JSON.parse(jsonMatch[0]);
     CD=parsed;
     render();
     hideOv();
